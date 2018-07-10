@@ -1,13 +1,13 @@
 # puppet cert renew
 
 pupper cert renew is a tool to automate the steps needed to renew a puppet client certificate.
-It performs various step by ssh connection to the puppetmaster and the server with the expired, expiring certifcate:
+It performs various steps by ssh connection to the puppetmaster and the server with the expired, expiring certifcate:
 
-* puppet cert clean on the puppetmaster
-* mv /var/lib/puppet/ssl /var/lib/puppet/ssl.bak on the server
-* puppet agent -t on the server
-* puppet cert sign on the puppetmaster
-* rm /var/lib/puppet/ssl.bak on the server (optional)
+* `puppet cert clean` on the puppetmaster
+* `mv /var/lib/puppet/ssl /var/lib/puppet/ssl.bak` on the server
+* `puppet agent -t` on the server
+* `puppet cert sign` on the puppetmaster
+* `rm /var/lib/puppet/ssl.bak` on the server (optional)
 
 ## Requirements
 ```
@@ -33,7 +33,7 @@ optional arguments:
 ```
 
 ## Example
-Renew the certificate on the host host.it signed on the puppetmaster puppet.master on log debug level
+Renew the certificate on the host `host.it` signed on the puppetmaster `puppet.master` on log debug level
 ```
 ./puppet_cert_renew.py -m puppet.master -s host.it -l debug
 ```
