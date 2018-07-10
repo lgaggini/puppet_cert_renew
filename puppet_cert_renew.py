@@ -96,13 +96,13 @@ def server_cert_clean(ssh, server, readonly):
         check_exit(*remote_command(ssh, command))
 
 
-def server_puppet_run(ssh, server, readonly):
+def server_puppet_run(ssh, server, readonly, block=True):
     """ run puppet on the host """
     logger.info('run puppet on %s' % (server))
     command = 'puppet agent -t'
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command))
+        check_exit(*remote_command(ssh, command), block)
 
 
 def puppet_cert_renew(puppetmaster, server, readonly):
@@ -112,7 +112,7 @@ def puppet_cert_renew(puppetmaster, server, readonly):
                             readonly)
     server_ssh = get_ssh(server)
     server_cert_backup(server_ssh, server, readonly)
-    server_puppet_run(server_ssh, server, readonly)
+    server_puppet_run(server_ssh, server, readonly, False)
     puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
                            readonly)
     server_puppet_run(server_ssh, server, readonly)
