@@ -90,7 +90,7 @@ def server_cert_backup(ssh, server, readonly):
 def server_cert_clean(ssh, server, readonly):
     """ remove the backup on the host """
     logger.info('remove %s certificate backup ' % (server))
-    command = 'rm /var/lib/puppet/ssl.bak'
+    command = 'rm -rf /var/lib/puppet/ssl.bak'
     logger.debug(command)
     if not readonly:
         check_exit(*remote_command(ssh, command))
@@ -105,7 +105,7 @@ def server_puppet_run(ssh, server, readonly, block=True):
         check_exit(*remote_command(ssh, command), block)
 
 
-def puppet_cert_renew(puppetmaster, server, readonly):
+def puppet_cert_renew(puppetmaster, server, readonly, cleanup):
     """ renew puppet clien certificate """
     puppetmaster_ssh = get_ssh(puppetmaster)
     puppetmaster_cert_clean(puppetmaster_ssh, server, puppetmaster,
@@ -116,6 +116,8 @@ def puppet_cert_renew(puppetmaster, server, readonly):
     puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
                            readonly)
     server_puppet_run(server_ssh, server, readonly)
+    if cleanup:
+        server_cert_clean(server_ssh, server, readonly)
     puppetmaster_ssh.close()
     server_ssh.close()
 
@@ -134,6 +136,11 @@ if __name__ == '__main__':
                         action='store_true',
                         help='readonly mode for debug (default disabled)')
     parser.set_defaults(readonly=False)
+    parser.add_argument('-c', '--cleanup', dest='cleanup',
+                        action='store_true',
+                        help='removes the old certicate backup from server \
+                        (default disabled)')
+    parser.set_defaults(readonly=False)
     parser.add_argument('-l', '--log-level', default=LOG_LEVELS[1],
                         help='log level (default info)', choices=LOG_LEVELS)
 
@@ -145,4 +152,5 @@ if __name__ == '__main__':
     # puppet cert renew
     puppet_cert_renew(cli_options.puppetmaster.relative,
                       cli_options.server.relative,
-                      cli_options.readonly)
+                      cli_options.readonly,
+                      cli_options.cleanup)
