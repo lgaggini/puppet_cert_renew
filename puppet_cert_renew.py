@@ -102,7 +102,7 @@ def server_puppet_run(ssh, server, readonly, block=True):
     command = 'puppet agent -t'
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command), block)
+        check_exit(*remote_command(ssh, command), block=block)
 
 
 def puppet_cert_renew(puppetmaster, server, readonly, cleanup):
