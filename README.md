@@ -28,6 +28,8 @@ optional arguments:
   -s SERVER, --server SERVER
                         fqdn of the server to be renewed
   -r, --readonly        readonly mode for debug (default disabled)
+  -c, --cleanup         removes the old certicate backup from server (default
+                        disabled
   -l {debug,info,warning,error,critical}, --log-level {debug,info,warning,error,critical}
                         log level (default info
 ```
