@@ -46,6 +46,15 @@ def puppetmaster_cert_sign(ssh, server, puppetmaster, readonly):
         ssh.remote_command(command)
 
 
+def puppetmaster_cert_reinventory(ssh, puppetmaster, readonly):
+    """ reinventory the updated certificate on the puppetmaster """
+    logger.info('reinventory certificate on %s' % (puppetmaster))
+    command = 'puppet cert reinventory'
+    logger.debug(command)
+    if not readonly:
+        ssh.remote_command(command)
+
+
 def server_cert_backup(ssh, server, readonly):
     """ backup the old cert on the host """
     logger.info('backup %s certificate' % (server))
@@ -73,7 +82,7 @@ def server_puppet_run(ssh, server, readonly, block=True):
         ssh.remote_command(command, block=block)
 
 
-def puppet_cert_renew(puppetmaster, server, readonly, cleanup):
+def puppet_cert_renew(puppetmaster, server, readonly, cleanup, reinventory):
     """ renew puppet client certificate """
     puppetmaster_srv = SshOps(puppetmaster, 'root')
     server_srv = SshOps(server, 'root')
@@ -88,6 +97,9 @@ def puppet_cert_renew(puppetmaster, server, readonly, cleanup):
         server_puppet_run(server_ssh, server, readonly)
         if cleanup:
             server_cert_clean(server_ssh, server, readonly)
+        if reinventory:
+            puppetmaster_cert_reinventory(puppetmaster_ssh, puppetmaster,
+                                          readonly)
 
 
 if __name__ == '__main__':
@@ -109,6 +121,12 @@ if __name__ == '__main__':
                         help='removes the old certicate backup from server \
                         (default disabled)')
     parser.set_defaults(readonly=False)
+    parser.add_argument('-i', '--inventory', dest='reinventory',
+                        action='store_true',
+                        help='reinventory the puppemaster certificates\
+                        (default disabled)')
+    parser.set_defaults(readonly=False)
+
     parser.add_argument('-l', '--log-level', default=LOG_LEVELS[1],
                         help='log level (default info)', choices=LOG_LEVELS)
 
@@ -121,4 +139,5 @@ if __name__ == '__main__':
     puppet_cert_renew(cli_options.puppetmaster.relative,
                       cli_options.server.relative,
                       cli_options.readonly,
-                      cli_options.cleanup)
+                      cli_options.cleanup,
+                      cli_options.reinventory)
