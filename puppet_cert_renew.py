@@ -3,8 +3,7 @@
 import argparse
 import logging
 import coloredlogs
-from paramiko import SSHClient, WarningPolicy
-import sys
+from pysshops import SshOps
 from fqdn import FQDN
 
 
@@ -18,37 +17,6 @@ def log_init(loglevel):
     logging.basicConfig(format=FORMAT, level=getattr(logging,
                                                      loglevel.upper()))
     coloredlogs.install(level=loglevel.upper())
-
-
-def get_ssh(hostname):
-    """ get a ssh connection to hostname """
-    logger.info('opening connection to %s' % hostname)
-    ssh = SSHClient()
-    ssh.set_missing_host_key_policy(WarningPolicy())
-    ssh.connect(hostname, username='root')
-    return ssh
-
-
-def remote_command(ssh, command):
-    """ execute a remote command by the ssh connection """
-    logger.debug(command)
-    stdin, stdout, stderr = ssh.exec_command(command)
-    stdout_str = ' ,'.join(stdout.readlines())
-    stderr_str = ' ,'.join(stderr.readlines())
-    logger.debug('stdout: ' + stdout_str)
-    logger.debug('stderr: ' + stderr_str)
-    return stdout.channel.recv_exit_status(), stdout_str, stderr_str
-
-
-def check_exit(exit, stdout, stderr, block=True):
-    """ check the exit code and if not 0 log stderror and exit
-    (if blocking command) """
-    if exit == 0:
-        return
-    else:
-        logger.error(stderr)
-        if block:
-            sys.exit(127)
 
 
 def valid_fqdn(fqdn):
@@ -66,7 +34,7 @@ def puppetmaster_cert_clean(ssh, server, puppetmaster, readonly):
     command = 'puppet cert clean %s' % (server)
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command))
+        ssh.remote_command(command)
 
 
 def puppetmaster_cert_sign(ssh, server, puppetmaster, readonly):
@@ -75,7 +43,7 @@ def puppetmaster_cert_sign(ssh, server, puppetmaster, readonly):
     command = 'puppet cert sign %s' % (server)
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command))
+        ssh.remote_command(command)
 
 
 def server_cert_backup(ssh, server, readonly):
@@ -84,7 +52,7 @@ def server_cert_backup(ssh, server, readonly):
     command = 'mv /var/lib/puppet/ssl /var/lib/puppet/ssl.bak'
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command))
+        ssh.remote_command(command)
 
 
 def server_cert_clean(ssh, server, readonly):
@@ -93,7 +61,7 @@ def server_cert_clean(ssh, server, readonly):
     command = 'rm -rf /var/lib/puppet/ssl.bak'
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command))
+        ssh.remote_command(command)
 
 
 def server_puppet_run(ssh, server, readonly, block=True):
@@ -102,24 +70,24 @@ def server_puppet_run(ssh, server, readonly, block=True):
     command = 'puppet agent -t'
     logger.debug(command)
     if not readonly:
-        check_exit(*remote_command(ssh, command), block=block)
+        ssh.remote_command(command, block=block)
 
 
 def puppet_cert_renew(puppetmaster, server, readonly, cleanup):
-    """ renew puppet clien certificate """
-    puppetmaster_ssh = get_ssh(puppetmaster)
-    puppetmaster_cert_clean(puppetmaster_ssh, server, puppetmaster,
-                            readonly)
-    server_ssh = get_ssh(server)
-    server_cert_backup(server_ssh, server, readonly)
-    server_puppet_run(server_ssh, server, readonly, False)
-    puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
-                           readonly)
-    server_puppet_run(server_ssh, server, readonly)
-    if cleanup:
-        server_cert_clean(server_ssh, server, readonly)
-    puppetmaster_ssh.close()
-    server_ssh.close()
+    """ renew puppet client certificate """
+    puppetmaster_srv = SshOps(puppetmaster, 'root')
+    server_srv = SshOps(server, 'root')
+
+    with puppetmaster_srv as puppetmaster_ssh, server_srv as server_ssh:
+        puppetmaster_cert_clean(puppetmaster_ssh, server, puppetmaster,
+                                readonly)
+        server_cert_backup(server_ssh, server, readonly)
+        server_puppet_run(server_ssh, server, readonly, False)
+        puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
+                               readonly)
+        server_puppet_run(server_ssh, server, readonly)
+        if cleanup:
+            server_cert_clean(server_ssh, server, readonly)
 
 
 if __name__ == '__main__':
