@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 ## Usage
 ```
-usage: puppet_cert_renew.py [-h] -m PUPPETMASTER -s SERVER [-r]                                                                                                                                                    
+usage: puppet_cert_renew.py [-h] -m PUPPETMASTER -s SERVER [-r] [-c] [-i]                                                                                                                                          
                             [-l {debug,info,warning,error,critical}]
 
 puppet_cert_renew, renew puppet client certificate
@@ -30,6 +30,8 @@ optional arguments:
   -r, --readonly        readonly mode for debug (default disabled)
   -c, --cleanup         removes the old certicate backup from server (default
                         disabled
+  -i, --inventory       reinventory the puppemaster certificates (default
+                        disabled)
   -l {debug,info,warning,error,critical}, --log-level {debug,info,warning,error,critical}
                         log level (default info
 ```
