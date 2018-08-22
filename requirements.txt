@@ -3,7 +3,7 @@ bcrypt==3.1.4
 cached-property==1.4.3
 cffi==1.11.5
 coloredlogs==10.0
-cryptography==2.2.2
+cryptography==2.3.1
 fqdn==1.1.0
 greenlet==0.4.13
 humanfriendly==4.13
