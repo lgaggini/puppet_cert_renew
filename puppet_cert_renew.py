@@ -5,6 +5,7 @@ import logging
 import coloredlogs
 from pysshops import SshOps
 from fqdn import FQDN
+import datetime
 
 
 logger = logging.getLogger('puppet_cert_renew')
@@ -55,19 +56,14 @@ def puppetmaster_cert_reinventory(ssh, puppetmaster, readonly):
         ssh.remote_command(command)
 
 
-def server_cert_backup(ssh, server, readonly):
+def server_cert_clean(ssh, server, readonly, cleanup):
     """ backup the old cert on the host """
     logger.info('backup %s certificate' % (server))
-    command = 'mv /var/lib/puppet/ssl /var/lib/puppet/ssl.bak'
-    logger.debug(command)
-    if not readonly:
-        ssh.remote_command(command)
-
-
-def server_cert_clean(ssh, server, readonly):
-    """ remove the backup on the host """
-    logger.info('remove %s certificate backup ' % (server))
-    command = 'rm -rf /var/lib/puppet/ssl.bak'
+    now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    if cleanup:
+        command = 'sudo rm -rf /var/lib/puppet/ssl'
+    else:
+        command = 'sudo mv /var/lib/puppet/ssl /var/lib/puppet/ssl.bak.%s' % (now)
     logger.debug(command)
     if not readonly:
         ssh.remote_command(command)
