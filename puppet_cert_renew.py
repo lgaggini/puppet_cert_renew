@@ -126,12 +126,12 @@ if __name__ == '__main__':
                         action='store_true',
                         help='removes the old certicate backup from server \
                         (default disabled)')
-    parser.set_defaults(readonly=False)
+    parser.set_defaults(cleanup=False)
     parser.add_argument('-i', '--inventory', dest='reinventory',
                         action='store_true',
                         help='reinventory the puppemaster certificates\
                         (default disabled)')
-    parser.set_defaults(readonly=False)
+    parser.set_defaults(reinventory=False)
 
     parser.add_argument('-l', '--log-level', default=LOG_LEVELS[1],
                         help='log level (default info)', choices=LOG_LEVELS)
