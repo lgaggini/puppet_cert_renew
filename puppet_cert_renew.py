@@ -72,27 +72,27 @@ def server_cert_clean(ssh, server, readonly, cleanup):
 def server_puppet_run(ssh, server, readonly, block=False):
     """ run puppet on the host """
     logger.info('run puppet on %s' % (server))
-    command = 'puppet agent -t'
+    command = 'sudo puppet agent -t'
     logger.debug(command)
     if not readonly:
         ssh.remote_command(command, block=block)
 
 
-def puppet_cert_renew(puppetmaster, server, readonly, cleanup, reinventory):
+def puppet_cert_renew(puppetmaster, server, user, port, autosign,
+                      readonly, cleanup, reinventory):
     """ renew puppet client certificate """
     puppetmaster_srv = SshOps(puppetmaster, 'root')
-    server_srv = SshOps(server, 'root')
+    server_srv = SshOps(server, user, port)
 
     with puppetmaster_srv as puppetmaster_ssh, server_srv as server_ssh:
         puppetmaster_cert_clean(puppetmaster_ssh, server, puppetmaster,
                                 readonly)
-        server_cert_backup(server_ssh, server, readonly)
+        server_cert_clean(server_ssh, server, readonly, cleanup)
+        if not autosign:
+            server_puppet_run(server_ssh, server, readonly)
+            puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
+                                   readonly)
         server_puppet_run(server_ssh, server, readonly)
-        puppetmaster_cert_sign(puppetmaster_ssh, server, puppetmaster,
-                               readonly)
-        server_puppet_run(server_ssh, server, readonly)
-        if cleanup:
-            server_cert_clean(server_ssh, server, readonly)
         if reinventory:
             puppetmaster_cert_reinventory(puppetmaster_ssh, puppetmaster,
                                           readonly)
@@ -108,6 +108,16 @@ if __name__ == '__main__':
                         help='fqdn of the puppetmaster')
     parser.add_argument('-s', '--server', required=True, type=valid_fqdn,
                         help='fqdn of the server to be renewed')
+    parser.add_argument('-u', '--user', dest='user', type=str,
+                        default='root',
+                        help='custom user to use for server (default root)')
+    parser.add_argument('-p', '--port', dest='port', type=str,
+                        default='22',
+                        help='custom port to use for server (default 22)')
+    parser.add_argument('-a', '--autosign', dest='autosign',
+                        action='store_true',
+                        help='autosign mode (default disabled)')
+    parser.set_defaults(autosign=False)
     parser.add_argument('-r', '--readonly', dest='readonly',
                         action='store_true',
                         help='readonly mode for debug (default disabled)')
@@ -134,6 +144,9 @@ if __name__ == '__main__':
     # puppet cert renew
     puppet_cert_renew(cli_options.puppetmaster.relative,
                       cli_options.server.relative,
+                      cli_options.user,
+                      cli_options.port,
+                      cli_options.autosign,
                       cli_options.readonly,
                       cli_options.cleanup,
                       cli_options.reinventory)
